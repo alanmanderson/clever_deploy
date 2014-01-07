@@ -7,7 +7,8 @@
   * 2. Upload this script to your server somewhere it can be publicly accessed
   * 3. Make sure the apache user owns this script (e.g., sudo chown www-data:www-data webhook.php)
   * 4. (optional) If the repo already exists on the server, make sure the same apache user from step 3 also owns that directory (e.g., sudo chown -R www-data:www-data)
-*/
+  *
+**/
 
 // Set Variables
 $LOCAL_ROOT         = "/path/to/repo/parent/directory";

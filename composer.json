@@ -11,7 +11,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "alanmanderson/clever_deploy": "src/"
+            "alanmanderson\\clever_deploy\\": "src/"
         }
     },
     "require": {}

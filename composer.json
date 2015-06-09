@@ -9,10 +9,10 @@
             "email": "alanmanderson@gmail.com"
         }
     ],
-	"autoload": {
-		"psr-4": {
-			"alanmanderson/clever_deploy": "src/"
-		}
-	}
+    "autoload": {
+        "psr-4": {
+            "alanmanderson/clever_deploy": "src/"
+        }
+    },
     "require": {}
 }

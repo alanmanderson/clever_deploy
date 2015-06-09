@@ -1,4 +1,5 @@
 <?php
+namespace alanmanderson\clever_deploy;
 /** 
   * The below script was forked from https://gist.github.com/marcelosomers/8305065 into 
   * https://gist.github.com/alanmanderson/2b79c0e724eb5e143701 and modified.  The original code is from marcelosomers
@@ -18,56 +19,82 @@
   *    (e.g., http://example.com/webhook.php)
   *
 **/
-
-$headers = getallheaders();
-$hubSignature = $headers['X-Hub-Signature'];
-$payload = file_get_contents('php://input');
-$jsonPayload = json_decode($payload);
-if (!verifySecret($hubSignature, $payload)){
-  http_response_code(403);
-  die ("invalid secret");
-}
-
-$data = json_decode($payload);
-$logFile = __DIR__."/../log/".time().".log";
-$file = fopen($logFile, 'w');
-$strData = print_r($data, true);
-fwrite($file,$strData);
-fclose($file);
-
-#if (in_array($data['action'], ['closed', 'synchronize'])){
-
-#}
-
-$LOCAL_ROOT         = "/var/www/CompleteSolar";
-$LOCAL_REPO_NAME    = "HelioTrack";
-$LOCAL_REPO         = "{$LOCAL_ROOT}/{$LOCAL_REPO_NAME}";
-$REMOTE_REPO        = "git@github.com:completesolar/HelioTrack.git";
-$BRANCH             = "staging";
-echo "Hello World!";
-print_r($data->ref);
-print ($data->ref == "refs/heads/2.0.4-test_setup1") ? "true" : "false";
-if ($data) {
-  // Only respond to POST requests from Github
-  echo "payload detected";
-  if ($data->ref == "refs/heads/staging") {
-        echo "staging branch confirmed";
-        if( file_exists($LOCAL_REPO) ) {
-          // If there is already a repo, just run a git pull to grab the latest changes
-          shell_exec("cd {$LOCAL_REPO} && git pull origin staging");
-          echo shell_exec("git log");
-          die("done " . time());
+class CleverDeploy{
+    
+    private $localRoot;
+    private $localRepoName;
+    private $remoteRepo;
+    private $branch;
+    private $requestSignature;
+    private $repoSecret;
+    private $payload;
+    public $logFile;
+    
+    public function __construct($localRoot, 
+                                $localRepoName,
+                                $remoteRepo,
+                                $branch,
+                                $repoSecret = null){
+        $this->localRoot = $localRoot;
+        $this->localRepoName = $localRepoName;
+        $this->remoteRepo = $remoteRepo;
+        $this->branch = $branch;
+        $this->repoSecret = $repoSecret;
+        $this->payload = file_get_contents('php://input');
+        $headers = getallheaders();
+        $this->requestSignature = $headers['X-Hub-Signature'];
+        
+        $this->logFile = __DIR__."/log/".time().".log";
+    }
+    
+    public function deploy(){
+        if (!$this->verifySecret($this->requestSignature, $this->payload)){
+            http_response_code(403);
+            die ("invalid secret");
         }
-  } else {
-  }
-} else {
-  echo "no payload";
-}
+        
+        $data = json_decode($this->payload);
+        
+        if (isset($this->logFile)){
+            $file = fopen($logFile, 'w');
+            $strData = print_r($data, true);
+            fwrite($file,$strData);
+            fclose($file);
+        }
+        
+        #if (in_array($data['action'], ['closed', 'synchronize'])){
+        
+        #}
+        
+        $LOCAL_REPO         = "{$this->localRoot}/{$this->localRepoName}";
+        $REMOTE_REPO        = "git@github.com:completesolar/HelioTrack.git";
+        $BRANCH             = "staging";
+        echo "Hello World!";
+        print_r($data->ref);
+        print ($data->ref == "refs/heads/2.0.4-test_setup1") ? "true" : "false";
+        if ($data) {
+            // Only respond to POST requests from Github
+            echo "payload detected";
+            if ($data->ref == "refs/heads/staging") {
+                echo "staging branch confirmed";
+                if( file_exists($LOCAL_REPO) ) {
+                    // If there is already a repo, just run a git pull to grab the latest changes
+                    shell_exec("cd {$LOCAL_REPO} && git pull origin staging");
+                    echo shell_exec("git log");
+                    die("done " . time());
+                }
+            } else {
+            }
+        } else {
+            echo "no payload";
+        }
+    }
 
-function verifySecret($hubSignature, $payload){
-  $secret = 'to1Wv9AmC1pmHOe';
-  // Split signature into algorithm and hash
-  list($algo, $hash) = explode('=', $hubSignature, 2);
-  $payloadHash = hash_hmac($algo, $payload, $secret);
-  return $hash === $payloadHash;
+    private function verifySecret($signature, $payload){
+      // Split signature into algorithm and hash
+      list($algo, $hash) = explode('=', $signature, 2);
+      $payloadHash = hash_hmac($algo, $payload, $this->repoSecret);
+      return $hash === $payloadHash;
+    }
+
 }

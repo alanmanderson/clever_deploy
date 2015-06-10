@@ -56,15 +56,19 @@ class CleverDeploy{
         $result = array();
         $result['success'] = false;
         $result['deployed'] = false;
+        header('Content-Type: application/json');
         if (!$this->verifySecret($this->requestSignature, $this->payload)){
             http_response_code(403);
-            $result['error'] = "invalid secret";
-            echo json_decode($result);
+            $result['error'] = 'invalid secret';
+            echo json_encode($result);
             exit();
         }
         
         if (! in_array($this->event, $this->acceptedEvents)){
             http_response_code(400);
+            $result['error'] = 'invalid event';
+            echo json_encode($result);
+            exit();
         }
 
         $data = json_decode($this->payload);

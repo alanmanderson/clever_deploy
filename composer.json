@@ -1,0 +1,18 @@
+{
+    "name": "alanmanderson/clever_deploy",
+    "description": "A script that will deploy code from a git repository",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "alanmanderson",
+            "email": "alanmanderson@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "alanmanderson\\clever_deploy\\": "src/"
+        }
+    },
+    "require": {}
+}

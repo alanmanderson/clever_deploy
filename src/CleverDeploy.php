@@ -52,7 +52,7 @@ class CleverDeploy{
         $this->logFile = __DIR__."/log/".time().".log";
     }
 
-    public function deploy(){
+    public function deploy($cmds = array()){
         $result = array();
         $result['success'] = false;
         $result['deployed'] = false;
@@ -63,7 +63,7 @@ class CleverDeploy{
             echo json_encode($result);
             exit();
         }
-        
+
         if (! in_array($this->event, $this->acceptedEvents)){
             http_response_code(400);
             $result['error'] = 'invalid event';
@@ -78,24 +78,28 @@ class CleverDeploy{
             echo json_encode($result);
             exit(0);
         }
-        
+
         if (isset($this->logFile)){
             $file = fopen($this->logFile, 'w');
             $strData = print_r($data, true);
             fwrite($file,$strData);
             fclose($file);
         }
-        
+
         if ($data->ref == "refs/heads/{$this->branch}") {
             $output = array();
             if( file_exists($this->localRoot) ) {
-            // If there is already a repo, just run a git pull to grab the latest changes
-                $cmd = "cd {$this->localRoot}";
-                $output[] = $cmd." ".shell_exec($cmd);
-                $cmd = "git pull origin {$this->branch}";
-                //$output[] = `git pull origin staging`;
-                $output[] .= $cmd." ".shell_exec($cmd);
-                //$output[] .= shell_exec("git log");
+                // If there is already a repo, just run a git pull to grab the latest changes
+                array_unshift(
+                    $cmds,
+                    "cd {$this->localRoot}",
+                    "git fetch origin {$this->branch}",
+                    "git merge origin/{$this->branch} --no-edit",
+                    "git log - 3"
+                );
+                foreach($cmds as $cmd){
+                    $output[] = $cmd." ".shell_exec($cmd);
+                }
                 $result['output'] = $output;
                 $result['deployed'] = true;
                 $result['success'] = true;
@@ -104,11 +108,11 @@ class CleverDeploy{
         }
         return json_encode($result);
     }
-    
+
     public function addAcceptedEvent($event){
         $this->acceptedEvents[] = $event;
     }
-    
+
     private function verifySecret($signature, $payload){
         // Split signature into algorithm and hash
         list($algo, $hash) = explode('=', $signature, 2);

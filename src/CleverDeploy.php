@@ -45,7 +45,7 @@ class CleverDeploy{
         $this->acceptedEvents = ['push'];
         $this->payload = file_get_contents('php://input');
         $headers = getallheaders();
-        $this->event = $headers['X-GitHub-Event'];
+        $this->event = $headers['X-Github-Event'];
         $this->requestSignature = $headers['X-Hub-Signature'];
         $dir = __DIR__."/log/";
         $success = file_exists($dir) || mkdir(__DIR__."/log/", 0700);

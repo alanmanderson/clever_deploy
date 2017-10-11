@@ -1,6 +1,8 @@
 <?php
 namespace alanmanderson\clever_deploy;
 
+use alanmanderson\clever_deploy\Connectors\ConnectorFactory;
+
 /**
  * The below script was forked from https://gist.github.com/marcelosomers/8305065 into
  * https://gist.github.com/alanmanderson/2b79c0e724eb5e143701 and modified.
@@ -20,106 +22,17 @@ namespace alanmanderson\clever_deploy;
  * 5. Go into your Github Repo > Settings > Service Hooks > WebHook URLs and add the public URL
  * (e.g., http://example.com/webhook.php)
  */
-class CleverDeploy
-{
+class CleverDeploy {
+    public $connector;
 
-    private $localRoot;
-    private $localRepoName;
-    private $remoteRepo;
-    private $branch;
-    private $requestSignature;
-    private $repoSecret;
-    private $payload;
-    private $event;
-    private $acceptedEvents;
-    public $logFile;
-
-    public function __construct($localRoot, $localRepoName, $remoteRepo, $branch, $repoSecret = null)
-    {
-        $this->localRoot = $localRoot;
-        $this->localRepoName = $localRepoName;
-        $this->remoteRepo = $remoteRepo;
-        $this->branch = $branch;
-        $this->repoSecret = $repoSecret;
-        $this->acceptedEvents = ['push'];
-        $this->payload = file_get_contents('php://input');
-        $headers = getallheaders();
-        $headers = array_change_key_case($headers);
-        $this->event = $headers['x-github-event'];
-        $this->requestSignature = $headers['x-hub-signature'];
-        $dir = __DIR__ . "/log/";
-        $success = file_exists($dir) || mkdir(__DIR__ . "/log/", 0700);
-        $this->logFile = __DIR__ . "/log/" . time() . ".log";
+    public function __construct($connectorType, $projectRoot, $branch, $repoSecret = null) {
+    	$this->connector = ConnectorFactory::getConnector($connectorType, $projectRoot, $branch, $repoSecret);
     }
 
-    public function deploy($cmds = array())
-    {
-        $result = array();
-        $result['success'] = false;
-        $result['deployed'] = false;
-        header('Content-Type: application/json');
-        if (! $this->verifySecret($this->requestSignature, $this->payload)) {
-            http_response_code(403);
-            $result['error'] = 'invalid secret';
-            echo json_encode($result);
-            exit();
-        }
-
-        if (! in_array($this->event, $this->acceptedEvents)) {
-            http_response_code(400);
-            $result['error'] = 'invalid event';
-            echo json_encode($result);
-            exit();
-        }
-
-        $data = json_decode($this->payload);
-        if (empty($data)) {
-            $result['error'] = "Payload could not be decoded: " . $this->payload;
-            http_response_code(400);
-            echo json_encode($result);
-            exit(0);
-        }
-
-        if (isset($this->logFile)) {
-            $file = fopen($this->logFile, 'w');
-            $strData = print_r($data, true);
-            fwrite($file, $strData);
-            fclose($file);
-        }
-
-        if ($data->ref == "refs/heads/{$this->branch}") {
-            $output = array();
-            if (file_exists($this->localRoot)) {
-                // If there is already a repo, just run a git pull to grab the latest changes
-                array_unshift(
-                    $cmds,
-                    "cd {$this->localRoot}",
-                    "git fetch origin {$this->branch}",
-                    "git merge origin/{$this->branch} --no-edit",
-                    "git log - 3"
-                );
-                foreach ($cmds as $cmd) {
-                    $output[] = $cmd . " " . shell_exec($cmd);
-                }
-                $result['output'] = $output;
-                $result['deployed'] = true;
-                $result['success'] = true;
-                $result['endTime'] = time();
-            }
-        }
-        return json_encode($result);
-    }
-
-    public function addAcceptedEvent($event)
-    {
-        $this->acceptedEvents[] = $event;
-    }
-
-    private function verifySecret($signature, $payload)
-    {
-        // Split signature into algorithm and hash
-        list ($algo, $hash) = explode('=', $signature, 2);
-        $payloadHash = hash_hmac($algo, $payload, $this->repoSecret);
-        return $hash === $payloadHash;
+    public function deploy($cmds = array()) {
+    	$result = $this->connector->deploy($cmds);
+    	header('Content-Type: application/json');
+        http_response_code($result->statusCode);
+        echo json_encode($result);
     }
 }

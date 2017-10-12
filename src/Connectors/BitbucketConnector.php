@@ -44,7 +44,7 @@ class BitbucketConnector implements RepositoryConnectorInterface{
         }
         
         $relevantChanges = false;
-        foreach($data->data->push->changes as $change){
+        foreach($data->push->changes as $change){
             if (isset($change->new->name) && $change->new->name == $this->branch){
                 $relevantChanges = true;
                 break;

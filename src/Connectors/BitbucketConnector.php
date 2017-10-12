@@ -12,7 +12,7 @@ class BitbucketConnector implements RepositoryConnectorInterface{
     private $event;
     private $acceptedEvents;
     
-    public function __construct($localRoot, $branch, $repoSecret) {
+    public function __construct($localRoot, $branch, $repoSecret = null) {
         $this->localRoot = $localRoot;
         $this->branch = $branch;
         $this->repoSecret = $repoSecret;

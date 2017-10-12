@@ -9,7 +9,7 @@ class ConnectorFactory{
 			case self::GITHUB_CONNECTOR:
 				return new GithubConnector($projectRoot, $branch, $repoSecret);
 			case self::BITBUCKET_CONNECTOR:
-				return new BitbucketConnector($projectRoot, $branch);
+				return new BitbucketConnector($projectRoot, $branch, $repoSecret);
 			default:
 				throw new \Exception('Unknown connector');
 		}

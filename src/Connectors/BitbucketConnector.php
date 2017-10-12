@@ -6,16 +6,20 @@ use alanmanderson\clever_deploy\Result;
 class BitbucketConnector implements RepositoryConnectorInterface{
     private $localRoot;
     private $branch;
+    private $repoSecret;
+    private $hookUuid;
     private $payload;
     private $event;
     private $acceptedEvents;
     
-    public function __construct($localRoot, $branch) {
+    public function __construct($localRoot, $branch, $repoSecret) {
         $this->localRoot = $localRoot;
         $this->branch = $branch;
+        $this->repoSecret = $repoSecret;
         $this->payload = file_get_contents('php://input');
         $headers = getallheaders();
         $headers = array_change_key_case($headers);
+        $this->hookUuid = $headers['x-hook-uuid'];
         $this->event = $headers['x-event-key'];
         $this->acceptedEvents = ['repo:push'];
     }
@@ -66,13 +70,7 @@ class BitbucketConnector implements RepositoryConnectorInterface{
     }
     
     public function verify(){
-        return in_array($_SERVER['REMOTE_ADDR'], [
-            '104.192.143.0',
-            '104.192.143.24',
-            '34.198.203.127',
-            '34.198.178.64',
-            '34.198.32.85'
-        ]);
-        return false;
+        if ($this->repoSecret == null) return true;
+        return $this->repoSecret == $this->hookUuid;
     }
 }

@@ -53,9 +53,9 @@ class BitbucketConnector implements RepositoryConnectorInterface{
         if ($relevantChanges) {
             $output = array();
             if (file_exists($this->localRoot)) {
+                chdir($this->localRoot);
                 array_unshift(
                     $cmds,
-                    "cd {$this->localRoot}",
                     "git fetch origin {$this->branch}",
                     "git merge origin/{$this->branch} --no-edit"
                 );

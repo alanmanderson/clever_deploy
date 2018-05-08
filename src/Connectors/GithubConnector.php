@@ -45,10 +45,10 @@ class GithubConnector implements RepositoryConnectorInterface{
 		if ($data->ref == "refs/heads/{$this->branch}") {
 			$output = array();
 			if (file_exists($this->localRoot)) {
+				chdir($this->localRoot);
 				// If there is already a repo, just run a git pull to grab the latest changes
 				array_unshift(
 						$cmds,
-						"cd {$this->localRoot}",
 						"git fetch origin {$this->branch}",
 						"git merge origin/{$this->branch} --no-edit",
 						"git log - 3"

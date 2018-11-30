@@ -18,7 +18,7 @@ class GithubConnector implements RepositoryConnectorInterface{
 		$this->repoSecret = $repoSecret;
 		$this->acceptedEvents = ['push'];
 		$this->payload = file_get_contents('php://input');
-		$headers = getallheaders();
+		$headers = $this->getAllHeaders();
 		$headers = array_change_key_case($headers);
 		$this->event = $headers['x-github-event'];
 		$this->signature = $headers['x-hub-signature'];
@@ -73,5 +73,23 @@ class GithubConnector implements RepositoryConnectorInterface{
 		list ($algo, $hash) = explode('=', $this->signature, 2);
 		$payloadHash = hash_hmac($algo, $this->payload, $this->repoSecret);
 		return $hash === $payloadHash;
+	}
+	public function getAllHeaders (){
+		if (!function_exists('getallheaders'))
+		{
+			function getallheaders()
+			{
+				$headers = [];
+				foreach ($_SERVER as $name => $value)
+				{
+					if (substr($name, 0, 5) == 'HTTP_')
+					{
+						$headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+					}
+				}
+				return $headers;
+			}
+		}
+		return getallheaders();
 	}
 }
